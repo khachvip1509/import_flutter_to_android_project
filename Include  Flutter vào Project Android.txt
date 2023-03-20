@@ -1,0 +1,90 @@
+Include Flutter đến Project Android(AAR )
+
+Bước 1: tạo 1 project Android như bình thường trong Android Studio
+(ví dụ : đường dẫn tạo ở đây  : D:\include_flutter_to_android\androidproject) 
+Bước 2: cd vào  D:\include_flutter_to_android
+Bước 3: tạo module Flutter bằng lệnh: (my_flutter là tên của flutter project) 
+	flutter create -t module --org com.example my_flutter
+=> Như vậy ta sẽ có project flutter ở đây :D:\include_flutter_to_android\my_flutter
+Bước 4: chạy lệnh sau để sinh ra file aar:
+	flutter build aar 
+=> đến bước này là đã xong các config cho Flutter
+chú ý: để include Flutter dc vào Android: nó phải tạo dưới dạng module hoặc Plugin
+
+Từ đây xuống là Config cho Android project
+Bước 5: Trong file build.gradles (Module:App)
+	thêm các dòng sau :
+	5.1:   
+	android{
+		...
+		compileOptions {
+			sourceCompatibility JavaVersion.VERSION_11
+			targetCompatibility JavaVersion.VERSION_11
+		}
+	}
+	5.2:
+	dependencies {
+		...
+		debugImplementation 'com.example.my_flutter:flutter_debug:1.0'
+		profileImplementation 'com.example.my_flutter:flutter_profile:1.0'
+		releaseImplementation 'com.example.my_flutter:flutter_release:1.0'
+	}
+	5.3:
+	 buildTypes {
+		....
+        profile {
+            initWith debug
+        }
+    }
+	
+Bước 6: Thêm thư viện trong file setttings.gradle 
+	dependencyResolutionManagement {
+	...
+    String storageUrl = System.env.FLUTTER_STORAGE_BASE_URL ?: "https://storage.googleapis.com"
+    
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url 'D:/include_flutter_to_android/my_flutter/build/host/outputs/repo'
+        }
+        maven {
+            url "$storageUrl/download.flutter.io"
+        }
+    }
+}
+
+Bước 7: Trong file AndroidManigest.xml thêm 1 activity như sau
+	 <application
+       ...>
+        <activity
+            android:name="io.flutter.embedding.android.FlutterActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            />
+        <activity
+            ...
+        </activity>
+    </application>
+Bước 8: 
+	Trong file MainActivity , thêm các xử lí code, để call đến Flutter
+	
+	...
+	  btn1 = findViewById(R.id.btn1)
+        
+        btn1.setOnClickListener {
+            startActivity(
+                FlutterActivity
+                    .withNewEngine()
+                    .initialRoute("/r1")
+                    .build(this)
+            )
+
+        }
+		
+Bước 9: Dựa vào giá trị trong initialRoute, ở main.dart trong flutter sẽ hứng giá trị, và route đến màn hình tương ứng
+
+Có 1 chú ý ở đây: 
+để có thể sử dụng sdk (file aar) của flutter, chúng ta chỉ cần chỉ đến đường dẫn (/build/host/outputs/repo) ,
+ như vậy chúng ta có thể build aar ở 1 nơi khác(hoặc 1 máy tính khác), xong chỉ cần copy thư mục này và khai báo đường dẫn ở trong setttings.gradle  file là được
